@@ -1,0 +1,444 @@
+{
+	"info": {
+		"_postman_id": "5ef999e6-f9f6-4b80-8d8c-cc6ab9833a09",
+		"name": "WEB_DocBrowser_auth_run",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Receive access and refresh tokens",
+			"item": [
+				{
+					"name": "WEB_token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f8476030-1bf8-4244-9257-cbda4a20795b",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d3286a9-b2a2-41c3-8f70-e4733f5799e6",
+								"exec": [
+									"let jsonData = JSON.parse(responseBody);",
+									"let jwtData = jsonData.data.accessToken;",
+									"let jwtDataArray = jwtData.split(\".\");",
+									"let jwtUserDataParsed = JSON.parse(atob(jwtDataArray[1]));",
+									"",
+									"//TEST#1",
+									"pm.test(\"T1_Verify successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200,201,202]);",
+									"});",
+									"",
+									"//TEST#2",
+									"pm.test(\"T2_Verify Content-Type header is present\", function () {",
+									"    pm.response.to.have.header(\"Content-Type\");",
+									"});",
+									"",
+									"//TEST#3",
+									"pm.test(\"T3_Verify Content-Type header value\", function () {",
+									"    pm.response.to.be.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+									"});",
+									"",
+									"//TEST#4",
+									"pm.test(\"T4_Verify data was retrieved\", function () {",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"//TEST#5",
+									"pm.test(\"T5_Verify access token length\", function() {",
+									"    let accessTokenLength = parseInt(pm.environment.get(\"WEB_AT_LENGTH\"));",
+									"    try {",
+									"        pm.expect(jsonData.data.accessToken).to.have.lengthOf(accessTokenLength);",
+									"        pm.environment.set(\"WEB_ACCESS_TOKEN\", jsonData.data.accessToken);",
+									"    }",
+									"    ",
+									"    catch (AssertionError) {",
+									"        pm.environment.set(\"WEB_ACCESS_TOKEN\", undefined);",
+									"        throw AssertionError;",
+									"    }",
+									"});",
+									"",
+									"//TEST#6",
+									"pm.test(\"T6_Verify refresh token length\", function() {",
+									"    let refreshTokenLength = parseInt(pm.environment.get(\"WEB_RT_LENGTH\"));",
+									"    let cookie = pm.response.headers.get('Set-Cookie');",
+									"    let refreshToken = cookie.substring(cookie.indexOf(\"=\") + 1, cookie.indexOf(\";\"));",
+									"    ",
+									"    try {",
+									"       pm.expect(refreshToken).to.have.lengthOf(refreshTokenLength);",
+									"       pm.environment.set(\"WEB_REFRESH_TOKEN\", refreshToken);",
+									"    }",
+									"    ",
+									"    catch (AssertionError) {",
+									"        pm.environment.set(\"WEB_REFRESH_TOKEN\", undefined);",
+									"        throw AssertionError;",
+									"    }",
+									"});",
+									"",
+									"//TEST#7",
+									"pm.test(\"T7_Verify user name in reponse is proper\", function () {",
+									"    pm.expect(jwtUserDataParsed.userCode).to.eql(pm.environment.get(\"CLIENT_USER_NAME\"));",
+									"});",
+									"",
+									"//TEST#8",
+									"pm.test(\"T8_Verify web refresh token expiration\", function () {",
+									"    ",
+									"    //extracting \"expiration\" value and converting it to miliseconds",
+									"    let dateRTExpire = new Date(jsonData.data.expiration * 1000);",
+									"    ",
+									"    //getting difference between current date and expiration date in milliseconds",
+									"    //bringing them to decimal value - 4 decimals after dot, then, round negative decimal, to positive integer",
+									"    let dateRTDif = Math.floor(Math.abs((Date.now() - dateRTExpire) / 10000));",
+									"    ",
+									"    //here we converting difference between current date and expiration to string and compare to stored value in env variable",
+									"    //corresponding env variable stores first 4 digits of milliseconds in 24 hours",
+									"    pm.expect(dateRTDif.toString()).to.eql(pm.environment.get(\"WEB_RT_EXPIRATION_TERM\"));",
+									"",
+									"});",
+									"",
+									"//TEST#9",
+									"//same principal as for refresh token verification",
+									"pm.test(\"T9_Verify web access token expiration\", function (){",
+									"    let dateATExpire = new Date(jwtUserDataParsed.exp * 1000);",
+									"    let dateATDif = Math.floor(Math.abs((Date.now() - dateATExpire) / 10000));",
+									"    pm.expect(dateATDif.toString()).to.eql(pm.environment.get(\"WEB_AT_EXPIRATION_TERM\")); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\t\n\t\"group\": \"{{WEB_GROUP}}\",\n\t\"username\": \"{{CLIENT_USER_NAME}}\",\n\t\"password\": \"{{CLIENT_PASSWORD}}\"\n}",
+							"options": {
+								"raw": {}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/{{BASE_URL_API_VERSION}}/{{CLIENT_ACCESS_LEVEL}}/auth/token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"{{BASE_URL_API_VERSION}}",
+								"{{CLIENT_ACCESS_LEVEL}}",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "2. Receive new access token ",
+			"item": [
+				{
+					"name": "WEB_refresh_token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "86dfbc7b-0b3e-4e14-add3-30db50323ecd",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "0add1820-ec52-4ae3-b7e0-3d0c2e2207b0",
+								"exec": [
+									"let jsonData = JSON.parse(responseBody);",
+									"let jwtData = jsonData.data.accessToken;",
+									"let jwtDataArray = jwtData.split(\".\");",
+									"let jwtUserDataParsed = JSON.parse(atob(jwtDataArray[1]));",
+									"",
+									"//TEST#1",
+									"pm.test(\"T1_Verify successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200,201,202]);",
+									"});",
+									"",
+									"//TEST#2",
+									"pm.test(\"T2_Verify Content-Type header is present\", function () {",
+									"    pm.response.to.have.header(\"Content-Type\");",
+									"});",
+									"",
+									"//TEST#3",
+									"pm.test(\"T3_Verify Content-Type header value\", function () {",
+									"    pm.response.to.be.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+									"});",
+									"",
+									"//TEST#4",
+									"pm.test(\"T4_Verify data was retrieved successfully\", function () {",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"//TEST#5",
+									"pm.test(\"T5_Verify access token length\", function() {",
+									"    let accessTokenLength = parseInt(pm.environment.get(\"WEB_AT_LENGTH\"));",
+									"    try {",
+									"        pm.expect(jsonData.data.accessToken).to.have.lengthOf(accessTokenLength);",
+									"        pm.environment.set(\"WEB_ACCESS_TOKEN\", jsonData.data.accessToken);",
+									"    }",
+									"    ",
+									"    catch (AssertionError) {",
+									"        pm.environment.set(\"WEB_ACCESS_TOKEN\", undefined);",
+									"        throw AssertionError;",
+									"    }",
+									"});",
+									"",
+									"//TEST#6",
+									"pm.test(\"T6_Verify user name in reponse is proper\", function () {",
+									"    pm.expect(jwtUserDataParsed.userCode).to.eql(pm.environment.get(\"CLIENT_USER_NAME\"));",
+									"});",
+									"",
+									"//TEST#7",
+									"//same principal as for refresh token verification",
+									"pm.test(\"T7_Verify device access token expiration\", function (){",
+									"    let dateATExpire = jwtUserDataParsed.exp * 1000;",
+									"    let dateATDif = Math.floor((dateATExpire - Date.now()) / 10000);",
+									"    pm.expect(dateATDif.toString()).to.eql(pm.environment.get(\"WEB_AT_EXPIRATION_TERM\")); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"type": "text",
+								"value": "Token={{WEB_REFRESH_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"group\": \"{{WEB_GROUP}}\"\n}",
+							"options": {
+								"raw": {}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/{{BASE_URL_API_VERSION}}/{{CLIENT_ACCESS_LEVEL}}/auth/refresh_token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"{{BASE_URL_API_VERSION}}",
+								"{{CLIENT_ACCESS_LEVEL}}",
+								"auth",
+								"refresh_token"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "3. Delete refresh token",
+			"item": [
+				{
+					"name": "WEB_delete_refresh_token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8702f1dd-fa99-40b5-a907-27e4ebf54482",
+								"exec": [
+									"let jsonData = JSON.parse(responseBody);",
+									"",
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200,201,202]);",
+									"});",
+									"",
+									"//This test checks for Content-Type header presence",
+									"pm.test(\"Verify Content-Type header is present\", function () {",
+									"    pm.response.to.have.header(\"Content-Type\");",
+									"});",
+									"",
+									"//This test checks for Content-Type header value",
+									"pm.test(\"Verify Content-Type header value\", function () {",
+									"    pm.response.to.be.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+									"});",
+									"",
+									"//This test checks data has been deleted",
+									"pm.test(\"Verify data has been deleted\", function () {",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "Token={{WEB_REFRESH_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"group\": \"{{WEB_GROUP}}\"\n}",
+							"options": {
+								"raw": {}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/{{BASE_URL_API_VERSION}}/{{CLIENT_ACCESS_LEVEL}}/auth/refresh_token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"{{BASE_URL_API_VERSION}}",
+								"{{CLIENT_ACCESS_LEVEL}}",
+								"auth",
+								"refresh_token"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "WEB_refresh_token_deleted",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "86dfbc7b-0b3e-4e14-add3-30db50323ecd",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7aad8aff-9ef1-4ec0-ac95-18af5410e17d",
+								"exec": [
+									"//This test_suite verifies DEVICE_CLIENT_REFRESH_TOKEN was deleted from DB and",
+									"//and user can not get access token using deleted refresh token",
+									"let jsonData = JSON.parse(responseBody);",
+									"",
+									"//TEST#1",
+									"pm.test(\"T1_Verify bad POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([401]);",
+									"});",
+									"",
+									"//TEST#2",
+									"pm.test(\"T2_Verify Content-Type header is present\", function () {",
+									"    pm.response.to.have.header(\"Content-Type\");",
+									"});",
+									"",
+									"//TEST#3",
+									"pm.test(\"T3_Verify Content-Type header value\", function () {",
+									"    pm.response.to.be.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+									"});",
+									"",
+									"//TEST#4",
+									"pm.test(\"T4_Verify refresh token was deleted from DB / sucess==false\", function () {",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"});",
+									"",
+									"//TEST#5",
+									"pm.test(\"T5_Verify refresh token was deleted from DB / erros_message\", function () {",
+									"    pm.expect(jsonData.errors[0].message).to.eql(pm.environment.get(\"INVALID_REQUEST_MESSAGE\"));",
+									"});",
+									"",
+									"//TEST#6",
+									"pm.test(\"T6_Verify refresh token was deleted from DB / errors_name\", function () {",
+									"    pm.expect(jsonData.errors[0].name).to.eql(pm.environment.get(\"INVALID_REQUEST_NAME\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"type": "text",
+								"value": "Token={{WEB_REFRESH_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"group\": \"{{WEB_GROUP}}\"\n}",
+							"options": {
+								"raw": {}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/{{BASE_URL_API_VERSION}}/{{CLIENT_ACCESS_LEVEL}}/auth/refresh_token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"{{BASE_URL_API_VERSION}}",
+								"{{CLIENT_ACCESS_LEVEL}}",
+								"auth",
+								"refresh_token"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}
