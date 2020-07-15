@@ -2,3 +2,5 @@ Flask
 Flask-RESTful
 Flask-JWT
 Flask-SQLAlchemy
+# uwsgi #install that when on Linux or MacOS
+# psycopg2 #install that when on Linux or MacOS
